@@ -16,34 +16,53 @@ class ContentCollector:
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(exist_ok=True)
         
-    def get_youtube_transcript(self, video_id: str) -> str:
-        """Downloads and processes YouTube transcript."""
+    def get_youtube_playlist_transcripts(self, playlist_url: str) -> List[str]:
+        """Downloads and processes transcripts from a YouTube playlist."""
         try:
-            transcript = YouTubeTranscriptApi.get_transcript(video_id)
-            full_text = " ".join([entry['text'] for entry in transcript])
-            return full_text
-        except Exception as e:
-            print(f"Error getting transcript for {video_id}: {e}")
-            return ""
-
-    def scrape_article(self, url: str) -> str:
-        """Scrapes and processes article content."""
-        try:
-            response = requests.get(url)
+            response = requests.get(playlist_url)
             soup = BeautifulSoup(response.text, 'html.parser')
-            
-            # Remove unwanted elements
-            for element in soup(['script', 'style', 'nav', 'header', 'footer']):
-                element.decompose()
-            
-            content = soup.find('article') or soup.find('main') or soup.find('div', class_='content')
-            
-            if content:
-                return content.get_text(strip=True)
-            return ""
+            video_ids = [
+                link['href'].split('v=')[1].split('&')[0]
+                for link in soup.find_all('a', href=True)
+                if 'watch?v=' in link['href']
+            ]
+            transcripts = []
+            for video_id in video_ids:
+                try:
+                    transcript = YouTubeTranscriptApi.get_transcript(video_id)
+                    full_text = " ".join([entry['text'] for entry in transcript])
+                    transcripts.append(full_text)
+                except Exception as e:
+                    print(f"Error getting transcript for video ID {video_id}: {e}")
+            return transcripts
         except Exception as e:
-            print(f"Error scraping {url}: {e}")
-            return ""
+            print(f"Error processing playlist {playlist_url}: {e}")
+            return []
+
+    def scrape_articles(self, website_url: str) -> List[str]:
+        """Scrapes and processes all articles from a website."""
+        try:
+            response = requests.get(website_url)
+            soup = BeautifulSoup(response.text, 'html.parser')
+            article_links = [
+                link['href'] for link in soup.find_all('a', href=True)
+                if '/article' in link['href']
+            ]
+            articles = []
+            for article_url in article_links:
+                try:
+                    full_url = article_url if article_url.startswith('http') else website_url + article_url
+                    article_response = requests.get(full_url)
+                    article_soup = BeautifulSoup(article_response.text, 'html.parser')
+                    content = article_soup.find('article') or article_soup.find('main')
+                    if content:
+                        articles.append(content.get_text(strip=True))
+                except Exception as e:
+                    print(f"Error scraping article {article_url}: {e}")
+            return articles
+        except Exception as e:
+            print(f"Error scraping website {website_url}: {e}")
+            return []
 
     def process_content(self, content: str, source: str) -> None:
         """Processes and saves content with metadata."""
@@ -53,6 +72,7 @@ class ContentCollector:
         with open(self.output_dir / filename, 'w', encoding='utf-8') as f:
             f.write(content)
 
+# Other classes remain unchanged...
 class KnowledgeBaseBuilder:
     """Builds and manages the knowledge base using sentence transformers."""
     
@@ -186,57 +206,50 @@ class LongevityAdvisor:
         """Determines if response needs medical disclaimer."""
         medical_terms = ['disease', 'condition', 'treatment', 'medication', 'diagnosis', 'symptoms']
         return any(term in query.lower() or term in response.lower() for term in medical_terms)
-
-def setup_advisor(content_sources: Dict[str, List[str]]) -> LongevityAdvisor:
+# Updated `setup_advisor` function
+def setup_advisor(playlist_url: str, website_url: str) -> LongevityAdvisor:
     """Sets up the complete advisor system."""
     # Initialize content collector
     collector = ContentCollector()
-    
-    # Collect content from all sources
-    for source_type, sources in content_sources.items():
-        for source in sources:
-            if source_type == 'youtube':
-                content = collector.get_youtube_transcript(source)
-            elif source_type == 'article':
-                content = collector.scrape_article(source)
-            
-            if content:
-                collector.process_content(content, f"{source_type}_{source}")
-    
+
+    # Collect content from YouTube playlist
+    print("Collecting YouTube playlist transcripts...")
+    transcripts = collector.get_youtube_playlist_transcripts(playlist_url)
+    for idx, transcript in enumerate(transcripts):
+        collector.process_content(transcript, f"youtube_video_{idx}")
+
+    # Collect content from the website
+    print("Scraping articles from the website...")
+    articles = collector.scrape_articles(website_url)
+    for idx, article in enumerate(articles):
+        collector.process_content(article, f"website_article_{idx}")
+
     # Build knowledge base
     kb_builder = KnowledgeBaseBuilder("content")
     chunks, embeddings = kb_builder.process_documents()
-    
+
     # Initialize advisor
     advisor = LongevityAdvisor(chunks, embeddings)
-    
+
     return advisor
 
 # Example usage
 if __name__ == "__main__":
-    # Configure your sources
-    content_sources = {
-        'youtube': [
-            'VIDEO_ID_1',  # Peter Attia podcast episodes
-            'VIDEO_ID_2'
-        ],
-        'article': [
-            'https://peterattiamd.com/article1',
-            'https://peterattiamd.com/article2'
-        ]
-    }
-    
+    # Provide source URLs
+    playlist_url = "https://www.youtube.com/playlist?list=PLlFlZLYiJ88Pnq_MSHfRH5KsX07XXTdL_"
+    website_url = "https://peterattiamd.com/"
+
     print("Setting up the AI Longevity Advisor...")
-    advisor = setup_advisor(content_sources)
-    
+    advisor = setup_advisor(playlist_url, website_url)
+
     print("\nWelcome to the AI Longevity Advisor. Ask me anything about health optimization and longevity.")
     print("Type 'quit' to exit.")
-    
+
     while True:
         user_input = input("\nYou: ")
         if user_input.lower() in ['quit', 'exit', 'bye', 'goodbye']:
             print("\nAdvisor: Take care and remember - longevity is a marathon, not a sprint.")
             break
-            
+
         response = advisor.get_response(user_input)
         print("\nAdvisor:", response)
