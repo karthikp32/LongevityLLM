@@ -8,6 +8,8 @@ from bs4 import BeautifulSoup
 import numpy as np
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
+import traceback
+
 
 class ContentCollector:
     """Collects and processes content from various sources."""
@@ -26,6 +28,7 @@ class ContentCollector:
                 for link in soup.find_all('a', href=True)
                 if 'watch?v=' in link['href']
             ]
+            print(f'video_ids: {video_ids}')
             transcripts = []
             for video_id in video_ids:
                 try:
@@ -36,7 +39,11 @@ class ContentCollector:
                     print(f"Error getting transcript for video ID {video_id}: {e}")
             return transcripts
         except Exception as e:
+               # Capture the full traceback of the error
+            error_message = traceback.format_exc()
             print(f"Error processing playlist {playlist_url}: {e}")
+                # Optionally, print the full traceback (this shows where the exception occurred)
+            print(f"Detailed traceback:\n{error_message}")
             return []
 
     def scrape_articles(self, website_url: str) -> List[str]:
