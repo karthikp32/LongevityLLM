@@ -9,6 +9,7 @@ import numpy as np
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 import traceback
+import re
 
 
 class ContentCollector:
@@ -17,17 +18,48 @@ class ContentCollector:
     def __init__(self, output_dir: str = "content"):
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(exist_ok=True)
-        
+
+    def get_video_ids_from_response_text(self, response_text):
+        # Regex to find the JSON object inside the script tag
+        match = re.search(r"var ytInitialData = ({.*});</script>", response_text)
+        if match:
+            yt_initial_data = match.group(1)
+            try:
+                # Parse the JSON data
+                data = json.loads(yt_initial_data)
+
+                # Navigate to the video IDs
+                video_ids = set()
+                tabs = data.get("contents", {}).get("twoColumnBrowseResultsRenderer", {}).get("tabs", [])
+                for tab in tabs:
+                    tab_content = tab.get("tabRenderer", {}).get("content", {})
+                    sections = tab_content.get("sectionListRenderer", {}).get("contents", [])
+                    for section in sections:
+                        items = section.get("itemSectionRenderer", {}).get("contents", [])
+                        for item in items:
+                            videos = item.get("playlistVideoListRenderer", {}).get("contents", [])
+                            for video in videos:
+                                video_id = video.get("playlistVideoRenderer", {}).get("videoId")
+                                if video_id:
+                                    video_ids.add(video_id)
+
+                # Output the set of video IDs
+                print(video_ids)
+
+            except json.JSONDecodeError:
+                print("Failed to decode JSON data.")
+        else:
+            print("ytInitialData not found in the response.")
+
     def get_youtube_playlist_transcripts(self, playlist_url: str) -> List[str]:
         """Downloads and processes transcripts from a YouTube playlist."""
         try:
             response = requests.get(playlist_url)
             soup = BeautifulSoup(response.text, 'html.parser')
-            video_ids = [
-                link['href'].split('v=')[1].split('&')[0]
-                for link in soup.find_all('a', href=True)
-                if 'watch?v=' in link['href']
-            ]
+            # Find the specific <script> tag within the <head> tag
+            script_content = self.get_video_id_script_content(soup)
+
+            video_ids = self.get_video_ids_from_response_text(script_content)
             print(f'video_ids: {video_ids}')
             transcripts = []
             for video_id in video_ids:
@@ -45,6 +77,17 @@ class ContentCollector:
                 # Optionally, print the full traceback (this shows where the exception occurred)
             print(f"Detailed traceback:\n{error_message}")
             return []
+
+    def get_video_id_script_content(self, soup):
+        script_tags = soup.head.find_all('script')
+
+        # Check if there are any <script> tags and extract the last one
+        if script_tags:
+            script_tag = script_tags[-2]  # Access the last <script> tag
+            script_content = script_tag.string  # Extracts the text inside the <script> tag
+            print(f'script_content: {script_content}')
+        else:
+            print("No <script> tags found in <head>!")
 
     def scrape_articles(self, website_url: str) -> List[str]:
         """Scrapes and processes all articles from a website."""
