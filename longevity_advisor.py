@@ -20,36 +20,23 @@ class ContentCollector:
         self.output_dir.mkdir(exist_ok=True)
 
     def get_video_ids_from_response_text(self, response_text):
-        # Regex to find the JSON object inside the script tag
-        match = re.search(r"var ytInitialData = ({.*});</script>", response_text)
-        if match:
-            yt_initial_data = match.group(1)
-            try:
-                # Parse the JSON data
-                data = json.loads(yt_initial_data)
+        # Regex to find all occurrences of "videoId": "value"
+        video_id_pattern = r'"videoId":\s*"([^"]+)"'
+        video_ids = set()
 
-                # Navigate to the video IDs
-                video_ids = set()
-                tabs = data.get("contents", {}).get("twoColumnBrowseResultsRenderer", {}).get("tabs", [])
-                for tab in tabs:
-                    tab_content = tab.get("tabRenderer", {}).get("content", {})
-                    sections = tab_content.get("sectionListRenderer", {}).get("contents", [])
-                    for section in sections:
-                        items = section.get("itemSectionRenderer", {}).get("contents", [])
-                        for item in items:
-                            videos = item.get("playlistVideoListRenderer", {}).get("contents", [])
-                            for video in videos:
-                                video_id = video.get("playlistVideoRenderer", {}).get("videoId")
-                                if video_id:
-                                    video_ids.add(video_id)
+        # Find all matches for the videoId pattern
+        matches = re.findall(video_id_pattern, response_text)
 
-                # Output the set of video IDs
-                print(video_ids)
+        # Add each videoId to the set
+        for match in matches:
+            video_ids.add(match)
 
-            except json.JSONDecodeError:
-                print("Failed to decode JSON data.")
+        # Output the set of video IDs
+        if video_ids:
+            print(f"Extracted video IDs: {video_ids}")
+            return video_ids
         else:
-            print("ytInitialData not found in the response.")
+            print("No video IDs found in the response.")
 
     def get_youtube_playlist_transcripts(self, playlist_url: str) -> List[str]:
         """Downloads and processes transcripts from a YouTube playlist."""
@@ -85,7 +72,8 @@ class ContentCollector:
         if script_tags:
             script_tag = script_tags[-2]  # Access the last <script> tag
             script_content = script_tag.string  # Extracts the text inside the <script> tag
-            print(f'script_content: {script_content}')
+            # print(f'script_content: {script_content}')
+            return script_content
         else:
             print("No <script> tags found in <head>!")
 
