@@ -10,7 +10,9 @@ from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 import traceback
 import re
-
+import whisper
+import yt_dlp
+import os
 
 class ContentCollector:
     """Collects and processes content from various sources."""
@@ -38,6 +40,38 @@ class ContentCollector:
         else:
             print("No video IDs found in the response.")
 
+    def download_and_transcribe(self, video_id):
+        try:
+            url = f"https://www.youtube.com/watch?v={video_id}"
+            
+            # Configure yt-dlp
+            ydl_opts = {
+                'format': 'bestaudio/best',
+                'postprocessors': [{
+                    'key': 'FFmpegExtractAudio',
+                    'preferredcodec': 'mp3',
+                }],
+                'outtmpl': f'{video_id}.%(ext)s',
+            }
+            
+            # Download audio
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                ydl.download([url])
+            
+            # Transcribe the downloaded audio
+            model = whisper.load_model("base")
+            result = model.transcribe(f"{video_id}.mp3")
+            
+            # Write transcript to file
+            with open('transcripts.txt', 'a', encoding='utf-8') as f:
+                f.write(f"{video_id}: {result['text']}\n")
+                
+            # Clean up downloaded file
+            os.remove(f"{video_id}.mp3")
+            
+        except Exception as e:
+            print(f"Error processing video {video_id}: {e}")
+
     def get_youtube_playlist_transcripts(self, playlist_url: str) -> List[str]:
         """Downloads and processes transcripts from a YouTube playlist."""
         try:
@@ -50,12 +84,7 @@ class ContentCollector:
             print(f'video_ids: {video_ids}')
             transcripts = []
             for video_id in video_ids:
-                try:
-                    transcript = YouTubeTranscriptApi.get_transcript(video_id)
-                    full_text = " ".join([entry['text'] for entry in transcript])
-                    transcripts.append(full_text)
-                except Exception as e:
-                    print(f"Error getting transcript for video ID {video_id}: {e}")
+                transcript = self.download_and_transcribe(video_id)
             return transcripts
         except Exception as e:
                # Capture the full traceback of the error
