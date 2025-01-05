@@ -40,38 +40,68 @@ class ContentCollector:
         else:
             print("No video IDs found in the response.")
 
-    def download_and_transcribe(self, video_id):
+    def download_audio_with_cookies(self, video_id, cookies_file):
+        """
+        Downloads audio from a YouTube video using yt-dlp and a cookies file.
+
+        Args:
+            video_id (str): The YouTube video ID.
+            cookies_file (str): Path to the cookies file for authentication.
+
+        Returns:
+            str: The filename of the downloaded audio file.
+        """
+        url = f"https://www.youtube.com/watch?v={video_id}"
+        output_file = f"{video_id}.mp3"
+        ydl_opts = {
+            'format': 'bestaudio/best',
+            'postprocessors': [{
+                'key': 'FFmpegExtractAudio',
+                'preferredcodec': 'mp3',
+            }],
+            'outtmpl': f"{video_id}.%(ext)s",
+            'cookiefile': cookies_file,  # Use cookies for authentication
+        }
+        
         try:
-            url = f"https://www.youtube.com/watch?v={video_id}"
-            
-            # Configure yt-dlp
-            ydl_opts = {
-                'format': 'bestaudio/best',
-                'postprocessors': [{
-                    'key': 'FFmpegExtractAudio',
-                    'preferredcodec': 'mp3',
-                }],
-                'outtmpl': f'{video_id}.%(ext)s',
-            }
-            
-            # Download audio
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 ydl.download([url])
-            
-            # Transcribe the downloaded audio
+            return output_file
+        except Exception as e:
+            print(f"Error downloading video {video_id}: {e}")
+            return None
+        
+    def transcribe_audio(self, audio_file, video_id, output_transcript="transcripts.txt"):
+        """
+        Transcribes audio using the Whisper model and writes the result to a file.
+
+        Args:
+            audio_file (str): Path to the audio file to transcribe.
+            video_id (str): The YouTube video ID.
+            output_transcript (str): Path to the transcript file.
+
+        Returns:
+            None
+        """
+        try:
             model = whisper.load_model("base")
-            result = model.transcribe(f"{video_id}.mp3")
+            result = model.transcribe(audio_file)
             
             # Write transcript to file
-            with open('transcripts.txt', 'a', encoding='utf-8') as f:
+            with open(output_transcript, 'a', encoding='utf-8') as f:
                 f.write(f"{video_id}: {result['text']}\n")
-                
-            # Clean up downloaded file
-            os.remove(f"{video_id}.mp3")
             
+            # Clean up audio file
+            os.remove(audio_file)
+            return output_transcript
         except Exception as e:
-            print(f"Error processing video {video_id}: {e}")
+            print(f"Error transcribing audio for video {video_id}: {e}")
 
+    def download_and_transcribe(self, video_id,cookies_file):
+        audio_file = self.download_audio_with_cookies(video_id, cookies_file)
+        if audio_file:
+            transcript_path = self.transcribe_audio(audio_file, video_id)
+            return transcript_path
     def get_youtube_playlist_transcripts(self, playlist_url: str) -> List[str]:
         """Downloads and processes transcripts from a YouTube playlist."""
         try:
@@ -85,6 +115,7 @@ class ContentCollector:
             transcripts = []
             for video_id in video_ids:
                 transcript = self.download_and_transcribe(video_id)
+                transcripts.append(transcript)
             return transcripts
         except Exception as e:
                # Capture the full traceback of the error
