@@ -1,0 +1,8 @@
+.youtube.com    TRUE    /    FALSE    1746633547    YT_CL    {"loctok":"ACih6ZPN8E21gRwtAVPspXPY4JYdTyXr_mklM0WfhSVWk53XndP-TgnzsL8CgI8SQmZfL-MnAz55pqQMP4rMgz_1YFcDAUsOM9Q"}
+.youtube.com    TRUE    /    FALSE    1746633547    SID    g.a000sAiBI-3IpmMvLBLGujq6_3Yqg_wmojN9or6Q-rtnpM2sfTDAamsX3XXAbR7mRfnqZsNZcQACgYKAXYSARISFQHGX2Mi5T5jW4uMP1VXGUEi0BH3YxoVAUF8yKpI35qHMHwMXOOKCi2_CK-B0076
+.youtube.com    TRUE    /    FALSE    1746633547    APISID    FZzmRoyY94xNiPa5/A9N-zvlIjKFqhH6cK
+.youtube.com    TRUE    /    FALSE    1746633547    SAPISID    DlgjbOz8lCuLlZlI/A6Nwm34q2Plmeu0Qs
+.youtube.com    TRUE    /    FALSE    1746633547    __Secure-1PAPISID    DlgjbOz8lCuLlZlI/A6Nwm34q2Plmeu0Qs
+.youtube.com    TRUE    /    FALSE    1746633547    __Secure-3PAPISID    DlgjbOz8lCuLlZlI/A6Nwm34q2Plmeu0Qs
+.youtube.com    TRUE    /    FALSE    1746633547    PREF    f6
+.youtube.com    TRUE    /    FALSE    1746633547    SIDCC    AKEyXzWiZWP9g4aF-q167puFBV7W9W-4AeYVmIpbR1h_w44lclPwYjyN-SrSefF98pXlrzA1XzZC

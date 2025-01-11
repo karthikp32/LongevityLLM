@@ -253,7 +253,7 @@ class LongevityAdvisor:
     def __init__(self, chunks: List[str], embeddings: np.ndarray):
         self.chunks = chunks
         self.embeddings = embeddings
-        self.llm = LocalLLMInterface()
+        self.llm = LocalLLMInterface(model_name='llama2')
         self.embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
         
         self.system_prompt = """
