@@ -92,7 +92,7 @@ class ContentCollector:
                 f.write(f"{video_id}: {result['text']}\n")
             
             # Clean up audio file
-            os.remove(audio_file)
+            # os.remove(audio_file)
             return output_transcript
         except Exception as e:
             print(f"Error transcribing audio for video {video_id}: {e}")
@@ -310,26 +310,27 @@ def setup_advisor(playlist_url: str, website_url: str) -> LongevityAdvisor:
     # Initialize content collector
     collector = ContentCollector()
 
+    collector.transcribe_audio(audio_file="201 - Deep dive back into Zone 2 Training ｜ Iñigo San-Millán, Ph.D. & Peter Attia, M.D. [-6PDBVRkCKc].mp3", video_id='1', output_transcript='zone_2_training_transcript.txt')
     # Collect content from YouTube playlist
-    print("Collecting YouTube playlist transcripts...")
-    transcripts = collector.get_youtube_playlist_transcripts(playlist_url)
-    for idx, transcript in enumerate(transcripts):
-        collector.process_content(transcript, f"youtube_video_{idx}")
+    # print("Collecting YouTube playlist transcripts...")
+    # transcripts = collector.get_youtube_playlist_transcripts(playlist_url)
+    # for idx, transcript in enumerate(transcripts):
+    #     collector.process_content(transcript, f"youtube_video_{idx}")
 
-    # Collect content from the website
-    print("Scraping articles from the website...")
-    articles = collector.scrape_articles(website_url)
-    for idx, article in enumerate(articles):
-        collector.process_content(article, f"website_article_{idx}")
+    # # Collect content from the website
+    # print("Scraping articles from the website...")
+    # articles = collector.scrape_articles(website_url)
+    # for idx, article in enumerate(articles):
+    #     collector.process_content(article, f"website_article_{idx}")
 
-    # Build knowledge base
-    kb_builder = KnowledgeBaseBuilder("content")
-    chunks, embeddings = kb_builder.process_documents()
+    # # Build knowledge base
+    # kb_builder = KnowledgeBaseBuilder("content")
+    # chunks, embeddings = kb_builder.process_documents()
 
-    # Initialize advisor
-    advisor = LongevityAdvisor(chunks, embeddings)
+    # # Initialize advisor
+    # advisor = LongevityAdvisor(chunks, embeddings)
 
-    return advisor
+    # return advisor
 
 # Example usage
 if __name__ == "__main__":
@@ -340,7 +341,7 @@ if __name__ == "__main__":
     print("Setting up the AI Longevity Advisor...")
     advisor = setup_advisor(playlist_url, website_url)
 
-    print("\nWelcome to the AI Longevity Advisor. Ask me anything about health optimization and longevity.")
+    print("\nWelcome to the AI Longevity Advisor. Ask me anything about Zone 2 training.")
     print("Type 'quit' to exit.")
 
     while True:
