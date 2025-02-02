@@ -7,9 +7,13 @@ from bs4 import BeautifulSoup
 import numpy as np
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
-
+import os
 from openai import OpenAI
+from dotenv import load_dotenv 
 
+load_dotenv(dotenv_path="local.env")                   
+api_key = os.getenv('OPENROUTER_API_KEY')
+print(f'api_key: {api_key} ')
 
 class LongevityAdvisor:
     
@@ -20,18 +24,18 @@ class LongevityAdvisor:
         """Generates response to user query."""
         client = OpenAI(
             base_url="https://openrouter.ai/api/v1",
-            api_key="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",
+            api_key=api_key,
         )
         
         completion = client.chat.completions.create(
         model="deepseek/deepseek-r1:free",
         messages=[
-            {
-            "role": "user",
-            "content": "How many minutes of Zone 2 cardio should I do per week?"
-            }
-        ]
-)
+                {
+                "role": "user",
+                "content": query
+                }
+            ]
+        )
         print(completion.choices[0].message.content)
         return completion.choices[0].message.content
 
@@ -42,7 +46,7 @@ if __name__ == "__main__":
     print("Setting up the AI Longevity Advisor...")
     advisor = LongevityAdvisor()
 
-    print("\nWelcome to the AI Longevity Advisor. Ask me anything about Zone 2 training.")
+    print("\nWelcome to the AI Longevity Advisor. Ask me anything about related to longevity.")
     print("Type 'quit' to exit.")
 
     while True:
